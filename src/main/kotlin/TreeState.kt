@@ -3,7 +3,8 @@
  */
 
 /**
- * This represents an immutable tree-based state object.
+ * This represents an immutable tree-based state object. All update methods
+ * return a new instance instead of mutating the current object.
  */
 interface TreeStateType<T> {
   /**
@@ -214,14 +215,14 @@ class Builder<T>() {
    * Set [TreeState.values].
    */
   fun withStateValues(values: StateValues<T>) = this.also {
-    it.state.values = values
+    it.state.values.putAll(values)
   }
 
   /**
    * Set [TreeState.substates].
    */
   fun withSubstates(substates: Substates<T>) = this.also {
-    it.state.substates = substates
+    it.state.substates.putAll(substates)
   }
 
   /**

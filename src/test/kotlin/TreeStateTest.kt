@@ -59,11 +59,11 @@ class TreeStateTest {
     Assert.assertEquals(state1.valueAt(identifier).value, 1)
     Assert.assertEquals(state1.substateAt(stateId).value?.valueAt(subId)?.value, 1)
     state1.removeSubstate(stateId)
-    Assert.assertNull(state1.valueAt(identifier).value)
-    Assert.assertNull(state1.substateAt(stateId).value)
+    Assert.assertEquals(state1.valueAt(identifier).value, 1)
+    Assert.assertNotNull(state1.substateAt(stateId).value)
     Assert.assertNull(state1.substateAt("").value)
     state1 = state1.updateSubstate("", state2)
-    Assert.assertNull(state1.valueAt(identifier).value)
+    Assert.assertEquals(state1.valueAt(identifier).value, 1)
   }
 
   @Test
@@ -76,5 +76,38 @@ class TreeStateTest {
 
     /// Then
     Assert.assertTrue(state.isEmpty)
+  }
+
+  @Test
+  fun test_stateValueImmutability_shouldWork() {
+    /// Setup
+    val identifier = "a.b.c"
+    val state1 = TreeState.empty<Int>()
+
+    /// When
+    val state2 = state1.updateValue(identifier, 1)
+
+    /// Then
+    Assert.assertNull(state1.valueAt(identifier).value)
+    Assert.assertEquals(state2.valueAt(identifier).value, 1)
+  }
+
+  @Test
+  fun test_stateSubstateImmutability_shouldWork() {
+    /// Setup
+    val identifier = "a.b.c.d"
+    val stateId = "a.b"
+    val subId = "c.d"
+    val state1 = TreeState.empty<Int>()
+
+    /// When
+    val state2 = TreeState.empty<Int>().updateValue(subId, 1)
+    val state3 = state1.updateSubstate(stateId, state2)
+    val state4 = state2.removeValue(subId)
+
+    /// Then
+    Assert.assertEquals(state2.valueAt(subId).value, 1)
+    Assert.assertEquals(state3.valueAt(identifier).value, 1)
+    Assert.assertTrue(state4.isEmpty)
   }
 }

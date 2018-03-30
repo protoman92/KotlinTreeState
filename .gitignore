@@ -6,3 +6,7 @@
 /build
 /captures
 /out
+/bin
+.classpath
+.project
+.settings
