@@ -13,7 +13,7 @@ interface TreeStateType<T> {
   val isEmpty: Boolean
 
   /**
-   * Get the nesting level, i.e. how deep the deepest substate is.
+   * Get the nesting level, i.e. how deep the deepest child state is.
    */
   val nestingLevel: Int
 
@@ -24,21 +24,21 @@ interface TreeStateType<T> {
   fun valueAt(identifier: String): Try<T>
 
   /**
-   * Get the substate at a [identifier], returning a [Try] indicating whether
-   * the substate is available or not.
+   * Get the child state at a [identifier], returning a [Try] indicating whether
+   * the child state is available or not.
    */
-  fun substateAt(identifier: String): Try<TreeStateType<T>>
+  fun childStateAt(identifier: String): Try<TreeStateType<T>>
 
   /**
-   * Update the substate at a [identifier].
+   * Update the child state at a [identifier].
    */
-  fun updateSubstate(identifier: String, substate: TreeStateType<T>?): TreeStateType<T>
+  fun updateChildState(identifier: String, state: TreeStateType<T>?): TreeStateType<T>
 
   /**
-   * Convenient method to remove a substate at a [identifier].
+   * Convenient method to remove a child state at a [identifier].
    */
-  fun removeSubstate(identifier: String): TreeStateType<T> {
-    return updateSubstate(identifier, null)
+  fun removeChildState(identifier: String): TreeStateType<T> {
+    return updateChildState(identifier, null)
   }
 
   /**
@@ -86,7 +86,7 @@ interface TreeStateType<T> {
 }
 
 private typealias StateValues<T> = MutableMap<String, T>
-private typealias Substates<T> = MutableMap<String, TreeStateType<T>>
+private typealias ChildStates<T> = MutableMap<String, TreeStateType<T>>
 
 /**
  * [TreeStateType] implementation.
@@ -105,19 +105,19 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
   }
 
   internal var values: StateValues<T> = mutableMapOf()
-  internal var substates: Substates<T> = mutableMapOf()
-  internal var substateSeparator: Char = '.'
+  internal var childStates: ChildStates<T> = mutableMapOf()
+  internal var childStateSeparator: Char = '.'
 
   override val isEmpty: Boolean get() {
-    return values.isEmpty() && substates.all { it.value.isEmpty }
+    return values.isEmpty() && childStates.all { it.value.isEmpty }
   }
 
   override val nestingLevel: Int get() {
-    return 1 + (substates.map { it.value.nestingLevel }.max() ?: 0)
+    return 1 + (childStates.map { it.value.nestingLevel }.max() ?: 0)
   }
 
   override fun toString(): String {
-    return "Values: $values, substates: $substates"
+    return "Values: $values, childStates: $childStates"
   }
 
   /**
@@ -125,23 +125,23 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
    */
   fun cloneBuilder() = builder<T>().withTreeState(this)
 
-  override fun substateAt(identifier: String): Try<TreeStateType<T>> {
-    val separator = substateSeparator
+  override fun childStateAt(identifier: String): Try<TreeStateType<T>> {
+    val separator = childStateSeparator
     val separated = identifier.split(separator)
     val first = Maybe.evaluate { separated[0] }.value
 
     if (separated.size == 1 && first != null && first.isNotEmpty()) {
-      return Try.wrap(substates[first], "No substate found at $identifier")
+      return Try.wrap(childStates[first], "No child state found at $identifier")
     } else if (first != null && first.isNotEmpty()) {
       val subId = separated.drop(1).joinToString(separator.toString())
-      return substateAt(first).flatMap { it.substateAt(subId) }
+      return childStateAt(first).flatMap { it.childStateAt(subId) }
     } else {
-      return Try.failure("No substate found at $identifier")
+      return Try.failure("No child state found at $identifier")
     }
   }
 
   override fun valueAt(identifier: String): Try<T> {
-    val separator = substateSeparator
+    val separator = childStateSeparator
     val separated = identifier.split(separator)
     val first = Maybe.evaluate { separated[0] }.value
 
@@ -149,34 +149,34 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
       return Try.wrap(values[first], "No value at $identifier")
     } else if (first != null && first.isNotEmpty()) {
       val subId = separated.drop(1).joinToString(separator.toString())
-      return substateAt(first).flatMap { it.valueAt(subId) }
+      return childStateAt(first).flatMap { it.valueAt(subId) }
     } else {
       return Try.failure("No value at $identifier")
     }
   }
 
-  override fun updateSubstate(identifier: String, substate: TreeStateType<T>?): TreeStateType<T> {
-    val separator = substateSeparator
+  override fun updateChildState(identifier: String, state: TreeStateType<T>?): TreeStateType<T> {
+    val separator = childStateSeparator
     val separated = identifier.split(separator)
     val first = Maybe.evaluate { separated[0] }.value
 
     if (separated.size == 1 && first != null && first.isNotEmpty()) {
-      return cloneBuilder().updateSubstate(first, substate).build()
+      return cloneBuilder().updateChildState(first, state).build()
     } else if (first != null && first.isNotEmpty()) {
       val subId = separated.drop(1).joinToString(separator.toString())
 
-      val firstSubstate = substateAt(first)
-        .getOrElse { Builder<T>().withSubstateSeparator(separator).build() }
+      val firstState = childStateAt(first)
+        .getOrElse { Builder<T>().withChildStateSeparator(separator).build() }
 
-      val updatedSubstate = firstSubstate.updateSubstate(subId, substate)
-      return updateSubstate(first, updatedSubstate)
+      val updatedState = firstState.updateChildState(subId, state)
+      return updateChildState(first, updatedState)
     } else {
       return this
     }
   }
 
   override fun mapValue(identifier: String, selector: (Try<T>) -> Try<T>): TreeStateType<T> {
-    val separator = substateSeparator
+    val separator = childStateSeparator
     val separated = identifier.split(separator)
     val first = Maybe.evaluate { separated[0] }.value
 
@@ -185,11 +185,11 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
     } else if (first != null && first.isNotEmpty()) {
       val subId = separated.drop(1).joinToString(separator.toString())
 
-      val substate = substateAt(first)
-        .getOrElse { Builder<T>().withSubstateSeparator(separator).build() }
+      val childState = childStateAt(first)
+        .getOrElse { Builder<T>().withChildStateSeparator(separator).build() }
 
-      val updatedSubstate = substate.mapValue(subId, selector)
-      return cloneBuilder().updateSubstate(first, updatedSubstate).build()
+      val updatedState = childState.mapValue(subId, selector)
+      return cloneBuilder().updateChildState(first, updatedState).build()
     } else {
       return this
     }
@@ -205,43 +205,43 @@ class Builder<T>() {
   private val state = TreeState<T>()
 
   /**
-   * Set [TreeState.substateSeparator].
+   * Set [TreeState.childStateSeparator].
    */
-  fun withSubstateSeparator(separator: Char) = this.also {
-    it.state.substateSeparator = separator
+  fun withChildStateSeparator(separator: Char) = this.also {
+    it.state.childStateSeparator = separator
   }
 
   /**
    * Set [TreeState.values].
    */
-  fun withStateValues(values: StateValues<T>) = this.also {
+  fun withValues(values: StateValues<T>) = this.also {
     it.state.values.putAll(values)
   }
 
   /**
-   * Set [TreeState.substates].
+   * Set [TreeState.childStates].
    */
-  fun withSubstates(substates: Substates<T>) = this.also {
-    it.state.substates.putAll(substates)
+  fun withChildStates(childStates: ChildStates<T>) = this.also {
+    it.state.childStates.putAll(childStates)
   }
 
   /**
    * Copy the properties of [state].
    */
   fun withTreeState(state: TreeState<T>) = this.also {
-    it.withSubstateSeparator(state.substateSeparator)
-      .withStateValues(state.values)
-      .withSubstates(state.substates)
+    it.withChildStateSeparator(state.childStateSeparator)
+      .withValues(state.values)
+      .withChildStates(state.childStates)
   }
 
   /**
-   * Update [TreeState.substates].
+   * Update [TreeState.childStates].
    */
-  fun updateSubstate(identifier: String, substate: TreeStateType<T>?) = this.also {
-    if (substate != null) {
-      it.state.substates.put(identifier, substate)
+  fun updateChildState(identifier: String, childState: TreeStateType<T>?) = this.also {
+    if (childState != null) {
+      it.state.childStates.put(identifier, childState)
     } else {
-      it.state.substates.remove(identifier)
+      it.state.childStates.remove(identifier)
     }
   }
 

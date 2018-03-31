@@ -45,7 +45,7 @@ class TreeStateTest {
   }
 
   @Test
-  fun test_updateSubstate_shouldWork() {
+  fun test_updateChildState_shouldWork() {
     /// Setup
     val identifier = "a.b.c.d"
     val stateId = "a.b"
@@ -55,14 +55,14 @@ class TreeStateTest {
 
     /// When & Then
     state2 = state2.updateValue(subId, 1)
-    state1 = state1.updateSubstate(stateId, state2)
+    state1 = state1.updateChildState(stateId, state2)
     Assert.assertEquals(state1.valueAt(identifier).value, 1)
-    Assert.assertEquals(state1.substateAt(stateId).value?.valueAt(subId)?.value, 1)
-    state1.removeSubstate(stateId)
+    Assert.assertEquals(state1.childStateAt(stateId).value?.valueAt(subId)?.value, 1)
+    state1.removeChildState(stateId)
     Assert.assertEquals(state1.valueAt(identifier).value, 1)
-    Assert.assertNotNull(state1.substateAt(stateId).value)
-    Assert.assertNull(state1.substateAt("").value)
-    state1 = state1.updateSubstate("", state2)
+    Assert.assertNotNull(state1.childStateAt(stateId).value)
+    Assert.assertNull(state1.childStateAt("").value)
+    state1 = state1.updateChildState("", state2)
     Assert.assertEquals(state1.valueAt(identifier).value, 1)
   }
 
@@ -83,17 +83,21 @@ class TreeStateTest {
     /// Setup
     val identifier = "a.b.c"
     val state1 = TreeState.empty<Int>()
+    val extraValues = mutableMapOf("a" to 0, "b" to 1, "c" to 2)
 
     /// When
     val state2 = state1.updateValue(identifier, 1)
+    val state3 = state1.updateValues(extraValues)
+    extraValues["a"] = 10
 
     /// Then
     Assert.assertNull(state1.valueAt(identifier).value)
     Assert.assertEquals(state2.valueAt(identifier).value, 1)
+    Assert.assertEquals(state3.valueAt("a").value, 0)
   }
 
   @Test
-  fun test_stateSubstateImmutability_shouldWork() {
+  fun test_stateChildStateImmutability_shouldWork() {
     /// Setup
     val identifier = "a.b.c.d"
     val stateId = "a.b"
@@ -102,7 +106,7 @@ class TreeStateTest {
 
     /// When
     val state2 = TreeState.empty<Int>().updateValue(subId, 1)
-    val state3 = state1.updateSubstate(stateId, state2)
+    val state3 = state1.updateChildState(stateId, state2)
     val state4 = state2.removeValue(subId)
 
     /// Then
