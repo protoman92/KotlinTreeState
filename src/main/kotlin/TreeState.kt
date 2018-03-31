@@ -96,16 +96,18 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
     /**
      * Get an empty [TreeState].
      */
+    @JvmStatic
     fun <T> empty() = builder<T>().build()
 
     /**
      * Get a new [Builder].
      */
+    @JvmStatic
     fun <T> builder() = Builder<T>()
   }
 
-  internal var values: StateValues<T> = mutableMapOf()
-  internal var childStates: ChildStates<T> = mutableMapOf()
+  internal val values: StateValues<T> = mutableMapOf()
+  internal val childStates: ChildStates<T> = mutableMapOf()
   internal var childStateSeparator: Char = '.'
 
   override val isEmpty: Boolean get() {
@@ -130,13 +132,13 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
     val separated = path.split(separator)
     val first = Option.evaluate { separated[0] }.value
 
-    if (separated.size == 1 && first != null && first.isNotEmpty()) {
-      return Try.wrap(childStates[first], "No child state found at $path")
+    return if (separated.size == 1 && first != null && first.isNotEmpty()) {
+      Try.wrap(childStates[first], "No child state found at $path")
     } else if (first != null && first.isNotEmpty()) {
       val subId = separated.drop(1).joinToString(separator.toString())
-      return childStateAt(first).flatMap { it.childStateAt(subId) }
+      childStateAt(first).flatMap { it.childStateAt(subId) }
     } else {
-      return Try.failure("No child state found at $path")
+      Try.failure("No child state found at $path")
     }
   }
 
@@ -145,13 +147,13 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
     val separated = path.split(separator)
     val first = Option.evaluate { separated[0] }.value
 
-    if (separated.size == 1 && first != null && first.isNotEmpty()) {
-      return Try.wrap(values[first], "No value at $path")
+    return if (separated.size == 1 && first != null && first.isNotEmpty()) {
+      Try.wrap(values[first], "No value at $path")
     } else if (first != null && first.isNotEmpty()) {
       val subId = separated.drop(1).joinToString(separator.toString())
-      return childStateAt(first).flatMap { it.valueAt(subId) }
+      childStateAt(first).flatMap { it.valueAt(subId) }
     } else {
-      return Try.failure("No value at $path")
+      Try.failure("No value at $path")
     }
   }
 
@@ -160,8 +162,8 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
     val separated = path.split(separator)
     val first = Option.evaluate { separated[0] }.value
 
-    if (separated.size == 1 && first != null && first.isNotEmpty()) {
-      return cloneBuilder().updateChildState(first, state).build()
+    return if (separated.size == 1 && first != null && first.isNotEmpty()) {
+      cloneBuilder().updateChildState(first, state).build()
     } else if (first != null && first.isNotEmpty()) {
       val subId = separated.drop(1).joinToString(separator.toString())
 
@@ -169,9 +171,9 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
         .getOrElse { Builder<T>().withChildStateSeparator(separator).build() }
 
       val updatedState = firstState.updateChildState(subId, state)
-      return updateChildState(first, updatedState)
+      updateChildState(first, updatedState)
     } else {
-      return this
+      this
     }
   }
 
@@ -180,8 +182,8 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
     val separated = path.split(separator)
     val first = Option.evaluate { separated[0] }.value
 
-    if (separated.size == 1 && first != null && first.isNotEmpty()) {
-      return cloneBuilder().mapValue(first, selector).build()
+    return if (separated.size == 1 && first != null && first.isNotEmpty()) {
+      cloneBuilder().mapValue(first, selector).build()
     } else if (first != null && first.isNotEmpty()) {
       val subId = separated.drop(1).joinToString(separator.toString())
 
@@ -189,9 +191,9 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
         .getOrElse { Builder<T>().withChildStateSeparator(separator).build() }
 
       val updatedState = childState.mapValue(subId, selector)
-      return cloneBuilder().updateChildState(first, updatedState).build()
+      cloneBuilder().updateChildState(first, updatedState).build()
     } else {
-      return this
+      this
     }
   }
 
@@ -218,7 +220,8 @@ class Builder<T>() {
     it.state.values.putAll(values)
   }
 
-  /**
+  @Suppress("MemberVisibilityCanBePrivate")
+    /**
    * Set [TreeState.childStates].
    */
   fun withChildStates(childStates: ChildStates<T>) = this.also {

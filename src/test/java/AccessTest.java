@@ -12,7 +12,7 @@ public final class AccessTest {
   public void test_accessKotlinClasses_shouldWork() {
     /// Setup
     System.out.println(TreeStateKt.class);
-    TreeStateType<String> state = TreeState.Companion.empty();
+    TreeStateType<String> state = TreeState.empty();
     Map<String, String> keyValues = new HashMap<>();
 
     String[][] kvArrays = new String[][] {
