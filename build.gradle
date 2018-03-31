@@ -21,9 +21,7 @@ repositories {
 }
 
 dependencies {
-  compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
   compile "com.github.protoman92:KotlinFP:master-SNAPSHOT"
-  testCompile "org.jetbrains.kotlin:kotlin-test-testng:$kotlin_version"
   testCompile "org.testng:testng:+"
 }
 
