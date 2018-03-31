@@ -1,3 +1,4 @@
+import javafx.beans.binding.Bindings.valueAt
 import org.testng.Assert
 import org.testng.annotations.Test
 
@@ -31,14 +32,14 @@ class TreeStateTest {
   @Test
   fun test_updateValue_shouldWork() {
     /// Setup
-    val identifier = "a.b.c"
+    val path = "a.b.c"
     var state = TreeState.empty<Int>()
 
     /// When & Then
-    state = state.updateValue(identifier, 1)
-    Assert.assertEquals(state.valueAt(identifier).value, 1)
-    state = state.removeValue(identifier)
-    Assert.assertNull(state.valueAt(identifier).value)
+    state = state.updateValue(path, 1)
+    Assert.assertEquals(state.valueAt(path).value, 1)
+    state = state.removeValue(path)
+    Assert.assertNull(state.valueAt(path).value)
     Assert.assertNull(state.valueAt("").value)
     state = state.clear().updateValue("", 10)
     Assert.assertTrue(state.isEmpty)
@@ -47,23 +48,26 @@ class TreeStateTest {
   @Test
   fun test_updateChildState_shouldWork() {
     /// Setup
-    val identifier = "a.b.c.d"
-    val stateId = "a.b"
-    val subId = "c.d"
+    val path = "a.b.c.d"
+    val statePath = "a.b"
+    val subPath = "c.d"
     var state1 = TreeState.empty<Int>()
     var state2 = TreeState.empty<Int>()
 
     /// When & Then
-    state2 = state2.updateValue(subId, 1)
-    state1 = state1.updateChildState(stateId, state2)
-    Assert.assertEquals(state1.valueAt(identifier).value, 1)
-    Assert.assertEquals(state1.childStateAt(stateId).value?.valueAt(subId)?.value, 1)
-    state1.removeChildState(stateId)
-    Assert.assertEquals(state1.valueAt(identifier).value, 1)
-    Assert.assertNotNull(state1.childStateAt(stateId).value)
+    state2 = state2.updateValue(subPath, 1)
+    state1 = state1.updateChildState(statePath, state2)
+    Assert.assertEquals(state1.valueAt(path).value, 1)
+
+    Assert.assertEquals(state1.childStateAt(statePath)
+      .flatMap { it.valueAt(subPath) }.value, 1)
+
+    state1.removeChildState(statePath)
+    Assert.assertEquals(state1.valueAt(path).value, 1)
+    Assert.assertNotNull(state1.childStateAt(statePath).value)
     Assert.assertNull(state1.childStateAt("").value)
     state1 = state1.updateChildState("", state2)
-    Assert.assertEquals(state1.valueAt(identifier).value, 1)
+    Assert.assertEquals(state1.valueAt(path).value, 1)
   }
 
   @Test
@@ -81,37 +85,37 @@ class TreeStateTest {
   @Test
   fun test_stateValueImmutability_shouldWork() {
     /// Setup
-    val identifier = "a.b.c"
+    val path = "a.b.c"
     val state1 = TreeState.empty<Int>()
     val extraValues = mutableMapOf("a" to 0, "b" to 1, "c" to 2)
 
     /// When
-    val state2 = state1.updateValue(identifier, 1)
+    val state2 = state1.updateValue(path, 1)
     val state3 = state1.updateValues(extraValues)
     extraValues["a"] = 10
 
     /// Then
-    Assert.assertNull(state1.valueAt(identifier).value)
-    Assert.assertEquals(state2.valueAt(identifier).value, 1)
+    Assert.assertNull(state1.valueAt(path).value)
+    Assert.assertEquals(state2.valueAt(path).value, 1)
     Assert.assertEquals(state3.valueAt("a").value, 0)
   }
 
   @Test
   fun test_stateChildStateImmutability_shouldWork() {
     /// Setup
-    val identifier = "a.b.c.d"
-    val stateId = "a.b"
-    val subId = "c.d"
+    val path = "a.b.c.d"
+    val statePath = "a.b"
+    val subPath = "c.d"
     val state1 = TreeState.empty<Int>()
 
     /// When
-    val state2 = TreeState.empty<Int>().updateValue(subId, 1)
-    val state3 = state1.updateChildState(stateId, state2)
-    val state4 = state2.removeValue(subId)
+    val state2 = TreeState.empty<Int>().updateValue(subPath, 1)
+    val state3 = state1.updateChildState(statePath, state2)
+    val state4 = state2.removeValue(subPath)
 
     /// Then
-    Assert.assertEquals(state2.valueAt(subId).value, 1)
-    Assert.assertEquals(state3.valueAt(identifier).value, 1)
+    Assert.assertEquals(state2.valueAt(subPath).value, 1)
+    Assert.assertEquals(state3.valueAt(path).value, 1)
     Assert.assertTrue(state4.isEmpty)
   }
 }

@@ -18,33 +18,33 @@ interface TreeStateType<T> {
   val nestingLevel: Int
 
   /**
-   * Get the value at a [identifier], returning a [Try] indicating whether the
-   * value is available or not.
+   * Get the value at a [path], returning a [Try] indicating whether the value
+   * is available or not.
    */
-  fun valueAt(identifier: String): Try<T>
+  fun valueAt(path: String): Try<T>
 
   /**
-   * Get the child state at a [identifier], returning a [Try] indicating whether
-   * the child state is available or not.
+   * Get the child state at a [path], returning a [Try] indicating whether the
+   * child state is available or not.
    */
-  fun childStateAt(identifier: String): Try<TreeStateType<T>>
+  fun childStateAt(path: String): Try<TreeStateType<T>>
 
   /**
-   * Update the child state at a [identifier].
+   * Update the child state at a [path].
    */
-  fun updateChildState(identifier: String, state: TreeStateType<T>?): TreeStateType<T>
+  fun updateChildState(path: String, state: TreeStateType<T>?): TreeStateType<T>
 
   /**
-   * Convenient method to remove a child state at a [identifier].
+   * Convenient method to remove a child state at a [path].
    */
-  fun removeChildState(identifier: String): TreeStateType<T> {
-    return updateChildState(identifier, null)
+  fun removeChildState(path: String): TreeStateType<T> {
+    return updateChildState(path, null)
   }
 
   /**
-   * Map the value at a [identifier] using [selector] and return a new [TreeStateType].
+   * Map the value at a [path] using [selector] and return a new [TreeStateType].
    */
-  fun mapValue(identifier: String, selector: (Try<T>) -> Try<T>): TreeStateType<T>
+  fun mapValue(path: String, selector: (Try<T>) -> Try<T>): TreeStateType<T>
 
   /**
    * Get an empty [TreeStateType].
@@ -52,11 +52,11 @@ interface TreeStateType<T> {
   fun clear(): TreeStateType<T>
 
   /**
-   * Update [value] at [identifier] and return a new [TreeStateType] without
-   * mutating the current one. If [value] is null, remove the [identifier].
+   * Update [value] at [path] and return a new [TreeStateType] without mutating
+   * the current one. If [value] is null, remove the [path].
    */
-  fun updateValue(identifier: String, value: T?): TreeStateType<T> {
-    return mapValue(identifier) { Try.wrap(value) }
+  fun updateValue(path: String, value: T?): TreeStateType<T> {
+    return mapValue(path) { Try.wrap(value) }
   }
 
   /**
@@ -69,18 +69,18 @@ interface TreeStateType<T> {
   }
 
   /**
-   * Remove the value at a [identifier] and return a new [TreeStateType].
+   * Remove the value at a [path] and return a new [TreeStateType].
    */
-  fun removeValue(identifier: String): TreeStateType<T> {
-    return updateValue(identifier, null)
+  fun removeValue(path: String): TreeStateType<T> {
+    return updateValue(path, null)
   }
 
   /**
-   * Remove all values at [identifiers].
+   * Remove all values at [paths].
    */
-  fun removeValues(identifiers: Iterable<String>): TreeStateType<T> {
+  fun removeValues(paths: Iterable<String>): TreeStateType<T> {
     var state = this
-    identifiers.forEach { state = state.removeValue(it) }
+    paths.forEach { state = state.removeValue(it) }
     return state
   }
 }
@@ -125,40 +125,40 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
    */
   fun cloneBuilder() = builder<T>().withTreeState(this)
 
-  override fun childStateAt(identifier: String): Try<TreeStateType<T>> {
+  override fun childStateAt(path: String): Try<TreeStateType<T>> {
     val separator = childStateSeparator
-    val separated = identifier.split(separator)
-    val first = Maybe.evaluate { separated[0] }.value
+    val separated = path.split(separator)
+    val first = Option.evaluate { separated[0] }.value
 
     if (separated.size == 1 && first != null && first.isNotEmpty()) {
-      return Try.wrap(childStates[first], "No child state found at $identifier")
+      return Try.wrap(childStates[first], "No child state found at $path")
     } else if (first != null && first.isNotEmpty()) {
       val subId = separated.drop(1).joinToString(separator.toString())
       return childStateAt(first).flatMap { it.childStateAt(subId) }
     } else {
-      return Try.failure("No child state found at $identifier")
+      return Try.failure("No child state found at $path")
     }
   }
 
-  override fun valueAt(identifier: String): Try<T> {
+  override fun valueAt(path: String): Try<T> {
     val separator = childStateSeparator
-    val separated = identifier.split(separator)
-    val first = Maybe.evaluate { separated[0] }.value
+    val separated = path.split(separator)
+    val first = Option.evaluate { separated[0] }.value
 
     if (separated.size == 1 && first != null && first.isNotEmpty()) {
-      return Try.wrap(values[first], "No value at $identifier")
+      return Try.wrap(values[first], "No value at $path")
     } else if (first != null && first.isNotEmpty()) {
       val subId = separated.drop(1).joinToString(separator.toString())
       return childStateAt(first).flatMap { it.valueAt(subId) }
     } else {
-      return Try.failure("No value at $identifier")
+      return Try.failure("No value at $path")
     }
   }
 
-  override fun updateChildState(identifier: String, state: TreeStateType<T>?): TreeStateType<T> {
+  override fun updateChildState(path: String, state: TreeStateType<T>?): TreeStateType<T> {
     val separator = childStateSeparator
-    val separated = identifier.split(separator)
-    val first = Maybe.evaluate { separated[0] }.value
+    val separated = path.split(separator)
+    val first = Option.evaluate { separated[0] }.value
 
     if (separated.size == 1 && first != null && first.isNotEmpty()) {
       return cloneBuilder().updateChildState(first, state).build()
@@ -175,10 +175,10 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
     }
   }
 
-  override fun mapValue(identifier: String, selector: (Try<T>) -> Try<T>): TreeStateType<T> {
+  override fun mapValue(path: String, selector: (Try<T>) -> Try<T>): TreeStateType<T> {
     val separator = childStateSeparator
-    val separated = identifier.split(separator)
-    val first = Maybe.evaluate { separated[0] }.value
+    val separated = path.split(separator)
+    val first = Option.evaluate { separated[0] }.value
 
     if (separated.size == 1 && first != null && first.isNotEmpty()) {
       return cloneBuilder().mapValue(first, selector).build()
@@ -237,26 +237,24 @@ class Builder<T>() {
   /**
    * Update [TreeState.childStates].
    */
-  fun updateChildState(identifier: String, childState: TreeStateType<T>?) = this.also {
+  fun updateChildState(path: String, childState: TreeStateType<T>?) = this.also {
     if (childState != null) {
-      it.state.childStates.put(identifier, childState)
+      it.state.childStates.put(path, childState)
     } else {
-      it.state.childStates.remove(identifier)
+      it.state.childStates.remove(path)
     }
   }
 
   /**
-   * Update [TreeState.values] at [identifier] with [selector].
+   * Update [TreeState.values] at [path] with [selector].
    */
-  fun mapValue(identifier: String, selector: (Try<T>) -> Try<T>) = this.also {
-    val value = Maybe.evaluate {
-      selector(it.state.valueAt(identifier)).value
-    }.value
+  fun mapValue(path: String, selector: (Try<T>) -> Try<T>) = this.also {
+    val value = Option.evaluate { selector(it.state.valueAt(path)).value }.value
 
     if (value != null) {
-      it.state.values.put(identifier, value)
+      it.state.values.put(path, value)
     } else {
-      it.state.values.remove(identifier)
+      it.state.values.remove(path)
     }
   }
 
