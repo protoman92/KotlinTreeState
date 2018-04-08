@@ -76,7 +76,7 @@ interface TreeStateType<T> {
    */
   fun updateValues(pairs: Map<String, T>): TreeStateType<T> {
     var state = this
-    pairs.forEach { a, b -> state = state.updateValue(a, b) }
+    pairs.forEach { (a, b) -> state = state.updateValue(a, b) }
     return state
   }
 
@@ -135,10 +135,8 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
   override val keyValues: Map<String, T> get() {
     val map = hashMapOf<String, T>()
 
-    val childMaps = childStates.map { kv ->
-      kv.value.keyValues.mapKeys {
-        "${kv.key}${this.childStateSeparator}${it.key}"
-      }
+    val childMaps = childStates.map { (k, v) ->
+      v.keyValues.mapKeys { "${k}${this.childStateSeparator}${it.key}" }
     }
 
     map.putAll(values)
