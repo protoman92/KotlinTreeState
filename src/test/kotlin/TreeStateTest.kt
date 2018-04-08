@@ -118,4 +118,22 @@ class TreeStateTest {
     Assert.assertEquals(state3.valueAt(path).value, 1)
     Assert.assertTrue(state4.isEmpty)
   }
+
+  @Test
+  fun test_accessKeyValues_shouldWork() {
+    /// Setup
+    var state = TreeState.empty<Int>()
+    val keys = listOf("a.b", "a.b.c", "a.b.c.d")
+
+    state = state
+      .updateValue("a.b", 0)
+      .updateValue("a.b.c", 1)
+      .updateValue("a.b.c.d", 2)
+
+    /// When
+    val keyValues = state.keyValues
+
+    /// Then
+    keys.forEach { Assert.assertEquals(keyValues[it], state.valueAt(it).value) }
+  }
 }

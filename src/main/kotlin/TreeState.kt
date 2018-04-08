@@ -18,6 +18,18 @@ interface TreeStateType<T> {
   val nestingLevel: Int
 
   /**
+   * Get all keys that can be used to access values in current [TreeStateType]
+   * and  [TreeState.childStates].
+   */
+  val keys: Set<String>
+
+  /**
+   * Get the [TreeStateType] representation in a [Map]. Each key in [Map.keys]
+   * can be used with [valueAt] to access a [T] value.
+   */
+  val keyValues: Map<String, T>
+
+  /**
    * Get the value at a [path], returning a [Try] indicating whether the value
    * is available or not.
    */
@@ -116,6 +128,22 @@ class TreeState<T> internal constructor(): TreeStateType<T> {
 
   override val nestingLevel: Int get() {
     return 1 + (childStates.map { it.value.nestingLevel }.max() ?: 0)
+  }
+
+  override val keys: Set<String> get() = keyValues.keys
+
+  override val keyValues: Map<String, T> get() {
+    val map = hashMapOf<String, T>()
+
+    val childMaps = childStates.map { kv ->
+      kv.value.keyValues.mapKeys {
+        "${kv.key}${this.childStateSeparator}${it.key}"
+      }
+    }
+
+    map.putAll(values)
+    childMaps.forEach { map.putAll(it) }
+    return map
   }
 
   override fun toString(): String {

@@ -8,7 +8,7 @@ import java.util.*
  */
 
 class TreeStateStressTest {
-  val keyCount = 10000
+  val keyCount = 5000
   var alphabets: List<String>? = null
   var keys: MutableList<String>? = null
   var keyValues: MutableMap<String, Int>? = null
@@ -23,7 +23,7 @@ class TreeStateStressTest {
     val rand = Random()
 
     for (i in 0 until keyCount) {
-      val length = Math.max(1, 30)
+      val length = Math.max(1, 25)
 
       if (length > maxLength) {
         maxLength = length
@@ -54,9 +54,13 @@ class TreeStateStressTest {
       Assert.assertEquals(stateValue, value)
     }
 
+    println(state.keyValues)
+
     Assert.assertEquals(state.nestingLevel, maxLength)
+    Assert.assertEquals(state.keyValues, keyValues!!)
+    Assert.assertEquals(state.keys, keys!!.toSet())
     state = state.removeValues(keys!!)
     Assert.assertTrue(state.isEmpty)
-    print(state)
+    println(state)
   }
 }
