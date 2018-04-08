@@ -25,12 +25,13 @@ dependencies {
   testCompile "org.testng:testng:+"
 }
 
-compileKotlin {
-  kotlinOptions.jvmTarget = "1.6"
-}
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+  sourceCompatibility = JavaVersion.VERSION_1_6
+  targetCompatibility = JavaVersion.VERSION_1_6
 
-compileTestKotlin {
-  kotlinOptions.jvmTarget = "1.6"
+  kotlinOptions {
+    jvmTarget = "1.6"
+  }
 }
 
 test {
