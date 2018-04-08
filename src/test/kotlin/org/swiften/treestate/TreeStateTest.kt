@@ -1,4 +1,5 @@
-import javafx.beans.binding.Bindings.valueAt
+package org.swiften.treestate
+
 import org.testng.Assert
 import org.testng.annotations.Test
 
